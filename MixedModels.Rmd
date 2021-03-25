@@ -14,14 +14,14 @@ knitr::opts_chunk$set(echo = TRUE)
 \begin{eqnarray*}
 Y_{ij} &=& X_{ij}\beta + Z_{ij}b_i + \epsilon_{ij}, \mbox{~ for} j = 1,..., k_i\\
 b_i &\sim& N(0, D)\\
-\epsilon_{i} &\sim& N(0, \sigma I_{k_i}) \mbox{~where} I_{k_i} = (1,...,1), k_i \mbox{times}\\
+\epsilon_{i} &\sim& N(0, \sigma^2 I_{k_i}) \mbox{~where} I_{k_i} = (1,...,1), k_i \mbox{times}\\
 \epsilon_{ij} &&\mbox{~ are iids and ~}, b_i \perp \epsilon_i 
 \end{eqnarray*} 
 Where the $Y_{ij}$ is the observation of individual $i$ at the time $j$, $X_{ij}\beta$ is the fixed effect and $Z_{ij}b_i$ is the random effect for individual $i$ with unknown unstructured covariance $D$ and $\epsilon$ is the unknown error measurement for each individual. Notice that if we write the formula in matrix form then
 \begin{eqnarray*}
 Y &=& X\beta + Zb + \epsilon\\
 b &\sim& N(0, \mathbf{D})\\
-\epsilon &\sim& N(0, \sigma Id)
+\epsilon &\sim& N(0, \sigma^2 Id)
 \end{eqnarray*} 
 
 # EM algorithm for linear mixed effect models
@@ -52,8 +52,8 @@ where $A^T$ is the transpose of matrix $A$.
 First, we compute the likelihood function of complete data. Suppose the parameters are $\theta = (\beta, b,D,\sigma)$ and the observed data is $y$ with latent data $b$.
 \begin{eqnarray*}
 f_{complete}(y,b|D,\sigma; \beta) &=& f(y|b;\beta,D,\sigma) f(b|D) \\
-&=& \prod_{i=1}^{N} \frac{1}{(2\pi \sigma)^{k/2}}\exp\left\{-\frac{(y_i -X_{ij}\beta - Z_{ij}b_i)(y_i -X_{ij}\beta - Z_{ij}b_i)^T}{2\sigma^{2}}\right\}\\
-&\times& \frac{1}{(2\pi)^{k/2} \det(D)^{1/2}}\exp\left\{\frac{- b_i D^{-1} b_i^T}{2}\right\}
+&=& \prod_{i=1}^{N} \frac{1}{(2\pi \sigma)^{k_i/2}}\exp\left\{-\frac{(y_i -X_{ij}\beta - Z_{ij}b_i)(y_i -X_{ij}\beta - Z_{ij}b_i)^T}{2\sigma^{2}}\right\}\\
+&\times& \frac{1}{(2\pi)^{k_i/2} \det(D)^{1/2}}\exp\left\{\frac{- b_i D^{-1} b_i^T}{2}\right\}
 \end{eqnarray*}
 So, the log likelihood function is
 \[
@@ -64,9 +64,9 @@ log(L) = \sum_{i=1}^N -\frac{1}{2}\log(det(\sigma^2 Id)) - \frac{1}{2}\log(det(D
 
 \begin{eqnarray*}
 f_{miss}(b|y;\beta,D,\sigma) &\propto& f(y|b) f(b|D) \\
-&=& \prod_{i=1}^{N} \frac{1}{(2\pi)^{k/2}det(\sigma^{2}ID)^{1/2}}\exp\left\{-\frac{(y_i -X_{ij}\beta - Zb)(y_i -X_{ij}\beta - Z_{ij}b_i)^T}{2\sigma^{2}}\right\} \\
-&\times& \frac{1}{(2\pi)^{k/2} \det(D)^{1/2}}\exp\left\{-\frac{b_i D^{-1} b_i^T}{2}\right\}\\
-&=& \prod_{i=1}^{N} \frac{1}{(2\pi)^{k/2}det(\sigma^2 Id)^{1/2}}\frac{1}{(2\pi)^{k/2} \det(D)^{1/2}} \exp\left\{-\frac{(y_i -X_{ij}\beta - Z_{ij}b_i)(y_i -X_{ij}\beta - Z_{ij}b_i)^T + \sigma^2 b_iD^{-1}b_i^T}{2\sigma^{2}}\right\}
+&=& \prod_{i=1}^{N} \frac{1}{(2\pi)^{k_i/2}det(\sigma^{2}Id_i)^{1/2}}\exp\left\{-\frac{(y_i -X_{ij}\beta - Zb)(y_i -X_{ij}\beta - Z_{ij}b_i)^T}{2\sigma^{2}}\right\} \\
+&\times& \frac{1}{(2\pi)^{k_i/2} \det(D)^{1/2}}\exp\left\{-\frac{b_i D^{-1} b_i^T}{2}\right\}\\
+&=& \prod_{i=1}^{N} \frac{1}{(2\pi)^{k_i}det(\sigma^2 Id_i)^{1/2}}\frac{1}{\det(D)^{1/2}} \exp\left\{-\frac{(y_i -X_{ij}\beta - Z_{ij}b_i)(y_i -X_{ij}\beta - Z_{ij}b_i)^T + \sigma^2 b_iD^{-1}b_i^T}{2\sigma^{2}}\right\}
 \end{eqnarray*}
 We need to do complete the square the numerator of the $\exp$ expression to get the density function of the normal distribution in term of $b_i$ variable
 
@@ -81,7 +81,7 @@ where $\Sigma_i = (Z_{ij}^T Z_{ij} + \sigma^2D^{-1})^{-1}$
 Now, back to the density function of the missing information. By replacing the expression in the parentheses by the above expression, then
 \begin{eqnarray*}
 f_{miss}(b|y;\beta,D,\sigma) &\propto& f(y|b) f(b|D) \\
-&\propto& \prod_{i=1}^{N} \frac{1}{\sigma^{k/2}}\frac{1}{\det(D)^{1/2}} \exp\left\{-\frac{[b_i - \Omega_i\sigma^{-2} Z_i^T(y_i - X_{ij}\beta)]^T \Omega_i^{-1}[b_i - \Omega_i\sigma^{-2} Z_i^T(y_i - X_{ij}\beta)]}{2}\right\}
+&\propto& \prod_{i=1}^{N} \frac{1}{\sigma^{k_i/2}}\frac{1}{\det(D)^{1/2}} \exp\left\{-\frac{[b_i - \Omega_i\sigma^{-2} Z_i^T(y_i - X_{ij}\beta)]^T \Omega_i^{-1}[b_i - \Omega_i\sigma^{-2} Z_i^T(y_i - X_{ij}\beta)]}{2}\right\}
 \end{eqnarray*}
 where $\Omega_i = \left(\frac{\Sigma^{-1}}{\sigma^2}\right)^{-1} = \left(\frac{Z_{i}^T Z_{i}}{\sigma^2} + D^{-1}\right)^{-1}$
 
@@ -95,17 +95,21 @@ and we also have
 \begin{eqnarray*}
 &&(y_i -X_{ij}\beta - Z_{ij}b_i)^T(y_i -X_{ij}\beta - Z_{ij}b_i) \\
 &=& y_i^Ty_i - y_i^TX_i\beta - y_i^TZ_ib_i - (X_i\beta)^Ty_i + (X_i\beta)^T(X_i\beta) + (X_i\beta)^TZ_ib_i - (Z_ib_i)^Ty_i + (Z_ib_i)^TX_i\beta + (Z_ib_i)^T(Z_ib_i)\\
-&=& y_i^Ty_i - y_i^TX_i\beta - y_i^TZ_ib_i - (X_i\beta)^Ty_i + (X_i\beta)^T(X_i\beta) + (X_i\beta)^TZ_ib_i - y_i^T(Z_ib_i) + (X_i\beta)Z_ib_i + Trace(Z_i^TZ_ib_ib_i^T))\\
+&=& y_i^Ty_i - y_i^TX_i\beta - y_i^TZ_ib_i - (X_i\beta)^Ty_i + 2(X_i\beta)^T(X_i\beta) \\
+&&+ (X_i\beta)^TZ_ib_i - (y_i^T(Z_ib_i))^T + ((X_i\beta)^TZ_ib_i)^T + Trace(Z_i^TZ_ib_ib_i^T))\\
 \end{eqnarray*}
 Thus, to compute the $Q$ function, we only need to find the expectation of $b_i$ and $b_ib_i^T$ which is the mean and variance of the multivariate normal distribution. So,
 \begin{eqnarray*}
-Q(\theta, \theta^{(s)}) &=& \sum_{i=1}^N \left(-\frac{1}{2}\log(det(\sigma Id)) -\frac{1}{2}\log(\det(D)) + (X_i\beta)^TZ_iE(b_i|y;\theta^{(s)}) - y_i^T Z_iE(b_i|y;\theta^{(s)}) + \right)\\
-&+& \sum_{i=1}^N \left(\frac{1}{2}Trace(Z_i^TZ_iE(b_ib_i^T|y;\theta^{(s)})) + \frac{(y_i - X_i\beta)^T(y_i - X_i\beta)}{2\sigma^{2}}\right)
+Q(\theta, \theta^{(s)}) &=& \sum_{i=1}^N \left(-\frac{1}{2}\log(det(\sigma Id)) -\frac{1}{2}\log(\det(D))  \right) +\\
+&+& \sum_{i=1}^N \frac{1}{2\sigma^2}\left(-Trace( Z_i^TZ_i E(b_ib_i^T|y;\theta^{(s)})) - y_i^Ty_i + y_i^TX_i\beta\right) \\
+&&+ \sum_{i=1}^N \frac{1}{2\sigma^2}\left(y_i^TZ_iE(b_i|y;\theta^{(s)}) + (X_i\beta)^Ty_i - 2(X_i\beta)^T(X_i\beta) - (X_i\beta)^TZ_i E(b_i|y;\theta)\right) \\
+&& + \sum_{i=1}^N \frac{1}{2\sigma^2}\left((y_i^TZ_iE(b_i|y;\theta))^T - ((X_i\beta)Z_iE(b_i|y;\theta))^T \right) \\
+&& - \frac{1}{2}Trace(D^{-1}E(b_ib_i^T|y;\theta^{(s)}))
 \end{eqnarray*}
 where
 \begin{eqnarray*}
-E(b_i|y;\theta^{(s)}) &=&  \Omega_i Z_i^T(y_i - X_{ij}\beta^{(s)}) =: \mu_i^{(s)}\\
-E(b_ib_i^T|y;\theta^{(s)}) &=& Cov(b_i,b_i^T) + E(b_i|y;\theta^{(s)}) E(b_i|y;\theta^{(s)})^T = \Omega_i^{(s)} + \mu^{(s)}(\mu^{(s)})^T=: \mu_{ii}
+E(b_i|y;\theta^{(s)}) &=&  \frac{1}{\sigma^2}\Omega_i Z_i^T(y_i - X_{ij}\beta^{(s)}) =: \mu_i^{(s)}\\
+E(b_ib_i^T|y;\theta^{(s)}) &=& Cov(b_i,b_i^T) + E(b_i|y;\theta^{(s)}) E(b_i|y;\theta^{(s)})^T = \Omega_i^{(s)} + \mu^{(s)}(\mu^{(s)})^T=: \mu_{ii}^{(s)}
 \end{eqnarray*}
 Hence, the parameters $\beta, D, \sigma^2$ can be computed as followings:
 
@@ -123,7 +127,7 @@ D^{(s+1)} = \frac{1}{N}\sum_{i=1}^N\Omega(y_i - X_{ij}\beta^{(s)}) = \frac{1}{N}
 
 + For $\beta$: The derivative of the $Q$ function with respect to $\beta$ is
 \[
-\sum_{i=1}^{N}(X_i)^T(y_i - X_i\beta - Z_iE(b_i|y;\theta^{(s)}) + (y_i - X_i\beta - Z_iE(b_i|y;\theta^{(s)})) = 0
+\sum_{i=1}^{N}(X_i)^T(y_i - X_i\beta - Z_iE(b_i|y;\theta^{(s)})  = 0
 \]
 the solution is
 \[
