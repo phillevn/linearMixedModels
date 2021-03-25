@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(ggplot2)
+library(lattice)
+```
+# Rat data is the data of weights of rats each week during 14 weeks
+```{r}
+rat_data <- read.csv(file="ratweight.csv")
+rat_data['week2'] <- rat_data["week"]^2
+rat_data
+```
+```{r}
+xyplot(weight ~ week, groups = id, data = rat_data,type = "b")
+```
+
+```{r}
+X <- as.matrix(cbind(1,rat_data["week"],rat_data["week2"]))
+Z <- X
+y <- as.matrix(rat_data$weight)
+mixedModel(y,rat_data$id,X,Z)
+```
+
+```{r}
+lmer_pack <- lmer(weight ~ week + week2 + (week +  week2 |id), data=rat_data, REML=FALSE)
+res.lmer_pack <- list(beta=fixef(lmer_pack), Omega=VarCorr(lmer_pack)$id[,], sigma2=attr(VarCorr(lmer_pack), "sc")^2)
+print(res.lmer_pack)
+```
+
+# Dental data is the measure of growing teeths in length at 4,8,12 years old.
+
+```{r}
+dental_data <- read_delim("dental.txt", delim = " ", col_names = c("ID","Sex","4","8","12")) %>% pivot_longer(cols = c(3:5), names_to = "year", values_to = "length") %>% mutate(Sex = (Sex == "F")) %>% mutate(length = as.numeric(length), year = as.numeric(year), ID = as.numeric(ID))
+```
+# Trajectories of growth by individuals
+
+```{r}
+xyplot(length ~ year, groups = ID, data = dental_data,type = "b")
+```
+
+```{r}
+y_dental <- as.matrix(dental_data$length)
+
+X_dental = as.matrix(cbind(1, dental_data$year))
+Z_dental = as.matrix(dental_data$year)
+# Z_dental <- X_dental
+```
+```{r}
+mixedModel(y_dental,dental_data$ID,X_dental,Z_dental)
+```
+```{r}
+lmer_dental <- lmer(length ~ 1 + year + (0+year |ID), data=dental_data, REML=FALSE)
+res.lmer_dental <- list(beta=fixef(lmer_dental), Omega=VarCorr(lmer_dental)$id[,], sigma2=attr(VarCorr(lmer_dental), "sc")^2)
+print(lmer_dental, digits=3, corr=TRUE)
+```
+
+
