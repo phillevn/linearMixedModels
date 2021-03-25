@@ -1,13 +1,14 @@
 
 mixedModel <- function(y, ID, X,Z, niter=1000){
   beta_coeff = solve(t(X)%*%X)%*%t(X)%*%(y) # initial value of beta coefficient
+  # beta_coeff <- rep(rnorm(ncol(X)))
   D_0 <- diag(ncol(Z))
   sigm_2 = matrix(1,nrow = 1)
   error <- 1
   iter_count <- 1
   n_obsever = nrow(y)/length(ID)
   y_minus_X_beta <- matrix(y - X%*%beta_coeff)
-  while ((error > 10^{-3}) & (iter_count < 1000)) {
+  while ((error > 10^{-3}) & (iter_count < niter)) {
     iter_count = iter_count + 1
     D_tmp = matrix(rep(0,ncol(Z)*ncol(Z)), ncol = ncol(Z))
     sigm_tmp = 0
@@ -47,5 +48,5 @@ mixedModel <- function(y, ID, X,Z, niter=1000){
     D_0 = D_1
     error = sum(beta_error) + sum(sigm_2_error) + sum(D_error)
   }
-  return(list(beta=beta_coeff, sigma = sigm_2, Covariance = D_0))
+  return(list(beta=beta_coeff, sigma_square = sigm_2, Covariance = D_0))
 }
